@@ -73,7 +73,7 @@ npm run build
 npm start
 ```
 
-For production deployment as a service, see [Client Deployment Guide](./backend/client/DEPLOYMENT.md).
+For production deployment as a service, see [Client Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md).
 
 ## Configuration
 
@@ -104,10 +104,10 @@ Create `status-server/config.json`:
 
 ## Documentation
 
-- [Client README](https://github.com/crystelf/status-client/README.md) - Client features and usage
-- [Client Deployment Guide](https://github.com/crystelf/status-client/DEPLOYMENT.md) - Service installation for Windows, Linux, macOS
+- [Client README](https://github.com/crystelf/status-client/blob/main/README.md) - Client features and usage
+- [Client Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md) - Service installation for Windows, Linux, macOS
 - [Server README](./README-status-server.md) - Server API and configuration
-- [Frontend README](https://github.com/crystelf/status-fronted/README.md) - Frontend features and development
+- [Frontend README](https://github.com/crystelf/status-fronted/blob/main/README.md) - Frontend features and development
 
 ## Technology Stack
 
@@ -226,7 +226,7 @@ npm test
 
 1. **Server**: Deploy with Docker or PM2
 2. **Frontend**: Build static export or deploy with Vercel/Netlify
-3. **Clients**: Install as system services (see [Deployment Guide](https://github.com/crystelf/status-client/DEPLOYMENT.md))
+3. **Clients**: Install as system services (see [Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md))
 
 ### Docker Deployment (Server)
 
@@ -282,7 +282,7 @@ MIT
 
 For issues and questions:
 - Check the documentation in each component's README
-- Review the [Deployment Guide](https://github.com/crystelf/status-client/DEPLOYMENT.md)
+- Review the [Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md)
 - Check existing GitHub issues
 - Create a new issue with detailed information
 

@@ -73,7 +73,7 @@ npm run build
 npm start
 ```
 
-生产环境作为服务运行请见 [客户端部署指南](./backend/client/DEPLOYMENT.md)。
+生产环境作为服务运行请见 [客户端部署指南](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md)。
 
 ## 配置
 
@@ -104,10 +104,10 @@ npm start
 
 ## 文档
 
-- [客户端 README](https://github.com/crystelf/status-client/README.md)
-- [客户端部署指南](https://github.com/crystelf/status-client/DEPLOYMENT.md)
+- [客户端 README](https://github.com/crystelf/status-client/blob/main/README.md)
+- [客户端部署指南](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md)
 - [服务端 README](./README-status-server.md)
-- [前端 README](https://github.com/crystelf/status-fronted/README.md)
+- [前端 README](https://github.com/crystelf/status-fronted/blob/main/README.md)
 
 ## 技术栈
 
