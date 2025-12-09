@@ -17,6 +17,14 @@ export interface ServerConfig {
    * Database file path
    */
   databasePath?: string;
+
+  /**
+   * CORS configuration
+   * - false: Disable CORS
+   * - true: Enable CORS for all origins (development only)
+   * - string[]: Array of allowed origins
+   */
+  cors?: boolean | string[];
 }
 
 /**
@@ -26,4 +34,5 @@ export const DEFAULT_SERVER_CONFIG: ServerConfig = {
   port: 7788,
   dataRetentionDays: 30,
   databasePath: 'data/system-monitor.db',
+  cors: true, // Enable CORS for all origins by default (development friendly)
 };

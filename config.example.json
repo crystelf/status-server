@@ -9,5 +9,8 @@
   "_dataRetentionDays_description": "Number of days to retain historical data before automatic cleanup (default: 30)",
   
   "databasePath": "data/system-monitor.db",
-  "_databasePath_description": "Path to SQLite database file (will be created if it doesn't exist)"
+  "_databasePath_description": "Path to SQLite database file (will be created if it doesn't exist)",
+  
+  "cors": true,
+  "_cors_description": "CORS configuration: false to disable, true to allow all origins, or array of allowed origins like [\"http://localhost:7777\", \"https://yourdomain.com\"]"
 }

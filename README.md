@@ -52,13 +52,15 @@ The server will start on `http://localhost:7788` by default.
 ### 2. Start the Frontend
 
 ```bash
-cd frontend
+cd status-fronted
 npm install
+cp config.example.json config.json
+# Edit config.json with your backend API URL
 npm run build
 npm start
 ```
 
-The frontend will be available at `http://localhost:3001`.
+The frontend will be available at `http://localhost:7777`.
 
 ### 3. Deploy Clients
 
@@ -98,9 +100,17 @@ Create `status-server/config.json`:
 ```json
 {
   "port": 7788,
-  "dataRetentionDays": 30
+  "dataRetentionDays": 30,
+  "cors": true
 }
 ```
+
+**CORS Configuration Options:**
+- `"cors": false` - Disable CORS completely
+- `"cors": true` - Enable CORS for all origins (useful for development)
+- `"cors": ["http://localhost:7777", "https://yourdomain.com"]` - Enable CORS for specific origins (recommended for production)
+
+**Note:** If you're running frontend and backend on different ports (e.g., frontend on 7777, backend on 7788), make sure to configure CORS properly to avoid CORS errors.
 
 ## Documentation
 
@@ -261,8 +271,22 @@ CMD ["node", "dist/main.js"]
 
 ### Frontend Issues
 - **Can't connect**: Verify server URL and CORS settings
+- **CORS errors**: Configure the `cors` option in server's `config.json`. For development, set `"cors": true` to allow all origins. For production, specify allowed origins: `"cors": ["https://yourdomain.com"]`
 - **Slow performance**: Enable virtualization for large client lists
 - **Theme issues**: Clear browser cache and localStorage
+
+### CORS Configuration
+
+If you encounter CORS errors when connecting frontend to backend:
+
+1. **Development mode**: Set `"cors": true` in `status-server/config.json` to allow all origins
+2. **Production mode**: Specify allowed origins:
+   ```json
+   {
+     "cors": ["https://your-frontend-domain.com"]
+   }
+   ```
+3. **Disable CORS**: Set `"cors": false` if you're using a reverse proxy or handling CORS elsewhere
 
 ## Contributing
 

@@ -42,6 +42,7 @@ export class ConfigService implements OnModuleInit {
           dataRetentionDays:
             fileConfig.dataRetentionDays ?? DEFAULT_SERVER_CONFIG.dataRetentionDays,
           databasePath: fileConfig.databasePath ?? DEFAULT_SERVER_CONFIG.databasePath,
+          cors: fileConfig.cors ?? DEFAULT_SERVER_CONFIG.cors,
         };
 
         console.log('Configuration loaded from config.json');
@@ -98,6 +99,13 @@ export class ConfigService implements OnModuleInit {
    */
   getDatabasePath(): string {
     return this.config.databasePath || DEFAULT_SERVER_CONFIG.databasePath!;
+  }
+
+  /**
+   * Get CORS configuration
+   */
+  getCors(): boolean | string[] | undefined {
+    return this.config.cors;
   }
 
   /**
