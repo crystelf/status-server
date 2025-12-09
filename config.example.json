@@ -1,0 +1,13 @@
+{
+  "_comment": "System Monitor Server Configuration Example",
+  "_instructions": "Copy this file to 'config.json' and modify the values according to your needs",
+  
+  "port": 7788,
+  "_port_description": "Port number for the server to listen on (default: 7788)",
+  
+  "dataRetentionDays": 30,
+  "_dataRetentionDays_description": "Number of days to retain historical data before automatic cleanup (default: 30)",
+  
+  "databasePath": "data/system-monitor.db",
+  "_databasePath_description": "Path to SQLite database file (will be created if it doesn't exist)"
+}
