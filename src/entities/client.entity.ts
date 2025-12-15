@@ -1,5 +1,7 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { StatusEntity } from './status.entity';
+import { DiskInfoEntity } from './disk-info.entity';
+import { DiskUsageEntity } from './disk-usage.entity';
 
 @Entity('clients')
 export class ClientEntity {
@@ -46,7 +48,7 @@ export class ClientEntity {
   totalDisk: number;
 
   @Column('varchar', { length: 50, nullable: true })
-  diskType: string;
+  diskType: string; // Deprecated, kept for backward compatibility
 
   @Column('varchar', { length: 255, nullable: true })
   location: string;
@@ -59,4 +61,10 @@ export class ClientEntity {
 
   @OneToMany(() => StatusEntity, (status: StatusEntity) => status.client)
   statuses: StatusEntity[];
+
+  @OneToMany(() => DiskInfoEntity, (diskInfo: DiskInfoEntity) => diskInfo.client)
+  diskInfos: DiskInfoEntity[];
+
+  @OneToMany(() => DiskUsageEntity, (diskUsage: DiskUsageEntity) => diskUsage.client)
+  diskUsages: DiskUsageEntity[];
 }

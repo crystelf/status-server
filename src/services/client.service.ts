@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ClientRepository } from '../repositories';
 import { StatusRepository } from '../repositories';
+import { DiskInfoRepository } from '../repositories';
+import { DiskUsageRepository } from '../repositories';
 import { ReportPayloadDto } from '../dto';
 import { ClientSummaryDto } from '../dto';
 import { ClientDetailDto } from '../dto';
 import { DynamicSystemStatus } from '../dto';
+import { DiskUsage } from '../dto';
 import { ClientEntity } from '../entities';
 import { StatusEntity } from '../entities';
 
@@ -15,6 +18,8 @@ export class ClientService {
   constructor(
     private readonly clientRepository: ClientRepository,
     private readonly statusRepository: StatusRepository,
+    private readonly diskInfoRepository: DiskInfoRepository,
+    private readonly diskUsageRepository: DiskUsageRepository,
   ) {}
 
   /**
@@ -38,7 +43,6 @@ export class ClientService {
         totalMemory: payload.staticInfo.totalMemory,
         totalSwap: payload.staticInfo.totalSwap,
         totalDisk: payload.staticInfo.totalDisk,
-        diskType: payload.staticInfo.diskType,
         location: payload.staticInfo.location,
         updatedAt: new Date(),
       };
@@ -59,6 +63,12 @@ export class ClientService {
       };
 
       await this.statusRepository.saveStatus(statusEntity);
+
+      // Save disk information
+      await this.diskInfoRepository.saveDiskInfos(payload.clientId, payload.staticInfo.disks);
+
+      // Save disk usage
+      await this.diskUsageRepository.saveDiskUsages(payload.clientId, payload.dynamicStatus.diskUsages);
 
       this.logger.log(`Report saved for client ${payload.clientId}`);
     } catch (error) {
@@ -115,6 +125,12 @@ export class ClientService {
         return null;
       }
 
+      // Get disk information
+      const diskInfos = await this.diskInfoRepository.getDiskInfosByClientId(id);
+      
+      // Get latest disk usage
+      const diskUsages = await this.diskUsageRepository.getLatestDiskUsage(id);
+
       const status = this.determineClientStatus(client.updatedAt);
 
       const detail: ClientDetailDto = {
@@ -135,7 +151,12 @@ export class ClientService {
           totalMemory: client.totalMemory || 0,
           totalSwap: client.totalSwap || 0,
           totalDisk: client.totalDisk || 0,
-          diskType: client.diskType || '',
+          disks: diskInfos.map(disk => ({
+            device: disk.device,
+            size: disk.size,
+            type: disk.type,
+            interfaceType: disk.interfaceType,
+          })),
           location: client.location || '',
         },
         currentStatus: {
@@ -144,6 +165,14 @@ export class ClientService {
           memoryUsage: Number(latestStatus.memoryUsage),
           swapUsage: Number(latestStatus.swapUsage),
           diskUsage: Number(latestStatus.diskUsage),
+          diskUsages: diskUsages.map(disk => ({
+            device: disk.device,
+            size: disk.size,
+            used: disk.used,
+            available: disk.available,
+            usagePercent: Number(disk.usagePercent),
+            mountpoint: disk.mountpoint,
+          })),
           networkUpload: Number(latestStatus.networkUpload),
           networkDownload: Number(latestStatus.networkDownload),
           timestamp: latestStatus.timestamp.getTime(),
@@ -170,17 +199,41 @@ export class ClientService {
       const endDate = new Date(endTime);
 
       const statusRecords = await this.statusRepository.findStatusHistory(id, startDate, endDate);
+      
+      // Get disk usage history for the same time period
+      const diskUsageHistory = await this.diskUsageRepository.getDiskUsageHistory(id, startDate, endDate);
+      
+      // Group disk usage by timestamp
+      const diskUsageByTimestamp = new Map<number, DiskUsage[]>();
+      diskUsageHistory.forEach(disk => {
+        const timestamp = disk.timestamp.getTime();
+        if (!diskUsageByTimestamp.has(timestamp)) {
+          diskUsageByTimestamp.set(timestamp, []);
+        }
+        diskUsageByTimestamp.get(timestamp)!.push({
+          device: disk.device,
+          size: disk.size,
+          used: disk.used,
+          available: disk.available,
+          usagePercent: Number(disk.usagePercent),
+          mountpoint: disk.mountpoint,
+        });
+      });
 
-      const history: DynamicSystemStatus[] = statusRecords.map((record) => ({
-        cpuUsage: Number(record.cpuUsage),
-        cpuFrequency: Number(record.cpuFrequency),
-        memoryUsage: Number(record.memoryUsage),
-        swapUsage: Number(record.swapUsage),
-        diskUsage: Number(record.diskUsage),
-        networkUpload: Number(record.networkUpload),
-        networkDownload: Number(record.networkDownload),
-        timestamp: record.timestamp.getTime(),
-      }));
+      const history: DynamicSystemStatus[] = statusRecords.map((record) => {
+        const timestamp = record.timestamp.getTime();
+        return {
+          cpuUsage: Number(record.cpuUsage),
+          cpuFrequency: Number(record.cpuFrequency),
+          memoryUsage: Number(record.memoryUsage),
+          swapUsage: Number(record.swapUsage),
+          diskUsage: Number(record.diskUsage),
+          networkUpload: Number(record.networkUpload),
+          networkDownload: Number(record.networkDownload),
+          diskUsages: diskUsageByTimestamp.get(timestamp) || [],
+          timestamp: timestamp,
+        };
+      });
 
       return history;
     } catch (error) {

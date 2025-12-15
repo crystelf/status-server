@@ -63,7 +63,14 @@ describe('ClientService', () => {
           totalMemory: 16000000000,
           totalSwap: 8000000000,
           totalDisk: 500000000000,
-          diskType: 'SSD',
+          disks: [
+            {
+              device: '/dev/sda',
+              size: 500000000000,
+              type: 'SSD',
+              interfaceType: 'SATA',
+            }
+          ],
           location: 'US-East',
         },
         dynamicStatus: {
@@ -74,6 +81,16 @@ describe('ClientService', () => {
           diskUsage: 70.0,
           networkUpload: 1000000,
           networkDownload: 5000000,
+          diskUsages: [
+            {
+              device: '/dev/sda1',
+              size: 500000000000,
+              used: 350000000000,
+              available: 150000000000,
+              usagePercent: 70.0,
+              mountpoint: '/',
+            }
+          ],
           timestamp: Date.now(),
         },
       };
