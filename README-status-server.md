@@ -1,7 +1,5 @@
 # System Monitor Server
 
-[中文文档](./README.zh-CN.md)
-
 The monitoring server receives data from clients, stores it in a database, and provides a REST API for the frontend.
 
 ## Features
@@ -20,12 +18,17 @@ The monitoring server receives data from clients, stores it in a database, and p
 - If you choose to install under Windows, make sure you have the necessary components such as Python, Visual Studio build tools to install sqlite, or switch to linux for installation.
 
 ```bash
-npm install
+npm install #Do not using pnpm!
 ```
 
 ## Configuration
 
 Create a `config.json` file in the server directory. See `config.example.json` for reference:
+
+```bash
+cp config.example.json config.json
+nano config.json
+```
 
 ```json
 {
@@ -41,15 +44,7 @@ Create a `config.json` file in the server directory. See `config.example.json` f
 
 ## Usage
 
-### Development Mode
-
-```bash
-npm run start:dev
-```
-
-The server will start with hot-reload enabled.
-
-### Production Mode
+### Production Mode(recommended)
 
 ```bash
 npm run build
@@ -61,6 +56,14 @@ npm run start:prod
 ```bash
 npm run build
 ```
+
+### Development Mode
+
+```bash
+npm run start:dev
+```
+
+The server will start with hot-reload enabled.
 
 ## API Endpoints
 
@@ -306,68 +309,6 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:cov
-```
-
-## Deployment
-
-### Using PM2
-
-```bash
-npm install -g pm2
-npm run build
-pm2 start dist/main.js --name system-monitor-server
-pm2 save
-pm2 startup
-```
-
-### Using Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY dist ./dist
-COPY config.json ./
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
-```
-
-Build and run:
-```bash
-docker build -t system-monitor-server .
-docker run -d -p 3000:3000 -v $(pwd)/data:/app/data system-monitor-server
-```
-
-### Using systemd (Linux)
-
-Create `/etc/systemd/system/system-monitor-server.service`:
-
-```ini
-[Unit]
-Description=System Monitor Server
-After=network.target
-
-[Service]
-Type=simple
-User=monitor
-WorkingDirectory=/opt/system-monitor-server
-ExecStart=/usr/bin/node dist/main.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=system-monitor-server
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable system-monitor-server
-sudo systemctl start system-monitor-server
 ```
 
 ## Performance Considerations

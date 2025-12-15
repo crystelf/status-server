@@ -1,7 +1,5 @@
 # System Monitor
 
-[中文文档](./README.zh-CN.md)
-
 A distributed real-time system monitoring solution with a modern web interface. Monitor CPU, memory, disk, network, and swap usage across multiple servers from a single dashboard.
 
 ## Features
@@ -34,7 +32,7 @@ The system consists of three components:
 ### Prerequisites
 
 - Node.js 18 or higher
-- npm or pnpm
+- **npm** or pnpm(problems may arise)
 
 ### 1. Start the Server
 
@@ -74,9 +72,6 @@ cp config.example.json config.json
 npm run build
 npm start
 ```
-
-For production deployment as a service, see [Client Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md).
-
 ## Configuration
 
 ### Client Configuration
@@ -230,24 +225,6 @@ npm test
 - ✅ Smooth animations with Framer Motion
 - ✅ Virtualized scrolling for large datasets
 
-## Deployment
-
-### Production Deployment
-
-1. **Server**: Deploy with Docker or PM2
-2. **Frontend**: Build static export or deploy with Vercel/Netlify
-3. **Clients**: Install as system services (see [Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md))
-
-### Docker Deployment (Server)
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-RUN npm ci --only=production
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
-```
-
 ## Security Considerations
 
 - Use HTTPS for production deployments
@@ -306,7 +283,6 @@ MIT
 
 For issues and questions:
 - Check the documentation in each component's README
-- Review the [Deployment Guide](https://github.com/crystelf/status-client/blob/main/DEPLOYMENT.md)
 - Check existing GitHub issues
 - Create a new issue with detailed information
 
