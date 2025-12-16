@@ -90,7 +90,16 @@ export class ClientService {
 
       const summaries: ClientSummaryDto[] = await Promise.all(
         clients.map(async (client) => {
-          const status = this.determineClientStatus(client.updatedAt);
+          // Get latest status to determine actual online status
+          const latestStatus = await this.statusRepository.findLatestStatus(client.id);
+          let lastUpdate: Date | string | number = client.updatedAt;
+          
+          // Use status.timestamp if available, otherwise fall back to client.updatedAt
+          if (latestStatus) {
+            lastUpdate = latestStatus.timestamp;
+          }
+          
+          const status = this.determineClientStatus(lastUpdate);
 
           return {
             clientId: client.id,
@@ -100,7 +109,7 @@ export class ClientService {
             hostname: client.hostname,
             platform: client.platform,
             status,
-            lastUpdate: (client.updatedAt instanceof Date ? client.updatedAt : new Date(client.updatedAt)).getTime(),
+            lastUpdate: (lastUpdate instanceof Date ? lastUpdate : new Date(lastUpdate)).getTime(),
           };
         }),
       );
