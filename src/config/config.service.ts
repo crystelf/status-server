@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { ServerConfig, DEFAULT_SERVER_CONFIG } from './server-config.interface';
@@ -12,7 +12,10 @@ import { ConfigRepository } from '../repositories';
 export class ConfigService implements OnModuleInit {
   private config: ServerConfig;
 
-  constructor(private readonly configRepository: ConfigRepository) {
+  constructor(
+    @Inject(forwardRef(() => ConfigRepository))
+    private readonly configRepository: ConfigRepository
+  ) {
     this.config = { ...DEFAULT_SERVER_CONFIG };
   }
 
@@ -61,7 +64,7 @@ export class ConfigService implements OnModuleInit {
    */
   private async initializeDatabaseConfig(): Promise<void> {
     try {
-      await this.configRepository.initializeDefaults();
+      //await this.configRepository.initializeDefaults();
 
       // Sync data retention days to database
       await this.configRepository.setConfig(

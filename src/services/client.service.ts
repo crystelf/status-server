@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ClientRepository } from '../repositories';
 import { StatusRepository } from '../repositories';
 import { DiskInfoRepository } from '../repositories';
@@ -16,9 +16,13 @@ export class ClientService {
   private readonly logger = new Logger(ClientService.name);
 
   constructor(
+    @Inject(forwardRef(() => ClientRepository))
     private readonly clientRepository: ClientRepository,
+    @Inject(forwardRef(() => StatusRepository))
     private readonly statusRepository: StatusRepository,
+    @Inject(forwardRef(() => DiskInfoRepository))
     private readonly diskInfoRepository: DiskInfoRepository,
+    @Inject(forwardRef(() => DiskUsageRepository))
     private readonly diskUsageRepository: DiskUsageRepository,
   ) {}
 

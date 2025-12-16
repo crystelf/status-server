@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { StatusRepository } from '../repositories';
 import { ConfigService } from '../config';
 
@@ -11,6 +11,7 @@ export class CleanupService implements OnModuleInit {
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(
+    @Inject(forwardRef(() => StatusRepository))
     private readonly statusRepository: StatusRepository,
     private readonly configService: ConfigService,
   ) {}

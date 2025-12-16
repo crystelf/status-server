@@ -5,21 +5,21 @@ The monitoring server receives data from clients, stores it in a database, and p
 ## Features
 
 - RESTful API built with NestJS
-- SQLite database with TypeORM
+- JSON file-based storage system
 - Automatic client online/offline detection
 - Configurable data retention policy
 - Data validation and error handling
 - Comprehensive logging
-- Database connection retry mechanism
+- File system retry mechanism
 - Automatic cleanup of old data
 
 ## Installation
 
-- If you choose to install under Windows, make sure you have the necessary components such as Python, Visual Studio build tools to install sqlite, or switch to linux for installation.
-
 ```bash
-npm install #Do not using pnpm!
+npm install
 ```
+
+**Note**: The server uses JSON file-based storage, so no database installation is required.
 
 ## Configuration
 
@@ -205,55 +205,66 @@ GET /api/clients/uuid/history?startTime=1703000000000&endTime=1703001234567
 ]
 ```
 
-## Database Schema
+## Data Storage
 
-The server uses SQLite with the following schema:
+The server uses JSON file-based storage with the following structure:
 
-### clients table
+### Storage Directory Structure
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(36) | Primary key (UUID) |
-| name | VARCHAR(255) | Client name |
-| tags | TEXT | JSON array of tags |
-| purpose | VARCHAR(500) | Client purpose |
-| hostname | VARCHAR(255) | Hostname |
-| platform | VARCHAR(20) | OS platform |
-| cpu_model | VARCHAR(255) | CPU model |
-| cpu_cores | INTEGER | Number of CPU cores |
-| cpu_arch | VARCHAR(50) | CPU architecture |
-| system_version | VARCHAR(255) | OS version |
-| system_model | VARCHAR(255) | System model |
-| total_memory | BIGINT | Total memory (bytes) |
-| total_swap | BIGINT | Total swap (bytes) |
-| total_disk | BIGINT | Total disk (bytes) |
-| disk_type | VARCHAR(50) | Disk type |
-| location | VARCHAR(255) | Geographic location |
-| created_at | TIMESTAMP | Creation timestamp |
-| updated_at | TIMESTAMP | Last update timestamp |
+```
+data/
+└── json-storage/
+    ├── clients.json      # Client information
+    ├── statuses.json     # Status records
+    ├── configs.json      # Configuration data
+    ├── diskInfos.json    # Disk information
+    └── diskUsages.json   # Disk usage records
+```
 
-### statuses table
+### Data Formats
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(36) | Primary key (UUID) |
-| client_id | VARCHAR(36) | Foreign key to clients |
-| cpu_usage | DECIMAL(5,2) | CPU usage (0-100) |
-| cpu_frequency | DECIMAL(5,2) | CPU frequency (GHz) |
-| memory_usage | DECIMAL(5,2) | Memory usage (0-100) |
-| swap_usage | DECIMAL(5,2) | Swap usage (0-100) |
-| disk_usage | DECIMAL(5,2) | Disk usage (0-100) |
-| network_upload | BIGINT | Upload speed (bytes/sec) |
-| network_download | BIGINT | Download speed (bytes/sec) |
-| timestamp | TIMESTAMP | Status timestamp |
+#### clients.json
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Client Name",
+    "tags": ["tag1", "tag2"],
+    "purpose": "Client Purpose",
+    "hostname": "hostname",
+    "platform": "linux",
+    "cpuModel": "Intel Core i7",
+    "cpuCores": 8,
+    "cpuArch": "x64",
+    "systemVersion": "Ubuntu 22.04",
+    "systemModel": "Dell PowerEdge",
+    "totalMemory": 17179869184,
+    "totalSwap": 8589934592,
+    "totalDisk": 1099511627776,
+    "location": "US-East",
+    "createdAt": "2023-12-01T00:00:00.000Z",
+    "updatedAt": "2023-12-01T12:00:00.000Z"
+  }
+]
+```
 
-### config table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| key | VARCHAR(100) | Primary key |
-| value | TEXT | Configuration value |
-| updated_at | TIMESTAMP | Last update timestamp |
+#### statuses.json
+```json
+[
+  {
+    "id": "uuid",
+    "clientId": "client-uuid",
+    "cpuUsage": 45.5,
+    "cpuFrequency": 3.6,
+    "memoryUsage": 62.3,
+    "swapUsage": 10.5,
+    "diskUsage": 55.8,
+    "networkUpload": 1048576,
+    "networkDownload": 5242880,
+    "timestamp": "2023-12-01T12:00:00.000Z"
+  }
+]
+```
 
 ## Architecture
 
@@ -274,7 +285,8 @@ The server uses SQLite with the following schema:
 └──────────────┬──────────────────────┘
                │
 ┌──────────────▼──────────────────────┐
-│         Database (SQLite)           │
+│      JSON Storage Service           │
+│    (File-based JSON storage)       │
 └─────────────────────────────────────┘
 ```
 
@@ -284,8 +296,8 @@ The server implements comprehensive error handling:
 
 1. **Validation Errors**: Returns 400 Bad Request with detailed error messages
 2. **Not Found**: Returns 404 when client doesn't exist
-3. **Database Errors**: Returns 500 Internal Server Error with logged details
-4. **Connection Errors**: Automatic retry with exponential backoff
+3. **File System Errors**: Returns 500 Internal Server Error with logged details
+4. **I/O Errors**: Automatic retry with exponential backoff
 
 All errors are logged with timestamps and stack traces.
 
@@ -313,15 +325,15 @@ npm run test:cov
 
 ## Performance Considerations
 
-- **Database Indexing**: Indexes on `client_id` and `timestamp` for fast queries
-- **Connection Pooling**: TypeORM manages database connections efficiently
-- **Async Operations**: All I/O operations are asynchronous
-- **Data Cleanup**: Automatic cleanup prevents database bloat
+- **File Caching**: JSON files are cached in memory for faster access
+- **Async Operations**: All file I/O operations are asynchronous
+- **Data Cleanup**: Automatic cleanup prevents file bloat
+- **Efficient Filtering**: In-memory filtering for fast queries
 
 ## Security
 
 - **Input Validation**: All inputs are validated before processing
-- **SQL Injection**: TypeORM prevents SQL injection attacks
+- **File Access**: Secure file operations with proper error handling
 - **Error Messages**: Sensitive information is not exposed in error messages
 - **CORS**: Configure CORS for production deployments
 
@@ -330,7 +342,7 @@ npm run test:cov
 Monitor the server with:
 
 - **Logs**: Check application logs for errors and warnings
-- **Database Size**: Monitor SQLite file size
+- **Storage Size**: Monitor JSON file sizes in `data/json-storage/`
 - **API Response Times**: Track endpoint performance
 - **Client Count**: Monitor number of active clients
 
@@ -340,31 +352,32 @@ Monitor the server with:
 
 - Check that the port is not already in use
 - Verify configuration file is valid JSON
-- Check file permissions for database directory
+- Check file permissions for `data/` directory
 
-### Database errors
+### Storage errors
 
-- Ensure write permissions for database file
+- Ensure write permissions for `data/json-storage/` directory
 - Check disk space
-- Verify SQLite is properly installed
+- Verify JSON file integrity
 
 ### High memory usage
 
 - Reduce `dataRetentionDays` to store less data
 - Check for memory leaks in logs
 - Monitor number of concurrent clients
+- Consider restarting the server periodically for large datasets
 
 ### Slow queries
 
-- Check database indexes
+- Monitor JSON file sizes
 - Reduce query time ranges
-- Consider upgrading to PostgreSQL for large deployments
+- Consider implementing data pagination for large datasets
 
 ## Requirements
 
 - Node.js 18 or higher
-- SQLite 3
-- Sufficient disk space for database
+- Sufficient disk space for JSON storage files
+- Write permissions for `data/` directory
 - Network access for API endpoints
 
 ## License

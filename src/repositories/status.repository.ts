@@ -1,14 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, Between } from 'typeorm';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { StatusEntity } from '../entities';
 import { DatabaseRetry } from '../utils';
+import { JsonStorageService } from '../services';
 
 @Injectable()
 export class StatusRepository {
   constructor(
-    @InjectRepository(StatusEntity)
-    private readonly repository: Repository<StatusEntity>,
+    @Inject(forwardRef(() => JsonStorageService))
+    private readonly jsonStorageService: JsonStorageService,
   ) {}
 
   /**
@@ -16,8 +15,7 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async saveStatus(status: Partial<StatusEntity>): Promise<StatusEntity> {
-    const entity = this.repository.create(status);
-    return this.repository.save(entity);
+    return await this.jsonStorageService.create('statuses', status);
   }
 
   /**
@@ -29,15 +27,16 @@ export class StatusRepository {
     startTime: Date,
     endTime: Date,
   ): Promise<StatusEntity[]> {
-    return this.repository.find({
+    const options = {
       where: {
         clientId,
-        timestamp: Between(startTime, endTime),
+        timestamp: { Between: [startTime, endTime] }
       },
       order: {
-        timestamp: 'ASC',
-      },
-    });
+        timestamp: 'ASC'
+      }
+    };
+    return await this.jsonStorageService.query('statuses', options);
   }
 
   /**
@@ -45,12 +44,15 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async findLatestStatus(clientId: string): Promise<StatusEntity | null> {
-    return this.repository.findOne({
+    const options = {
       where: { clientId },
       order: {
-        timestamp: 'DESC',
+        timestamp: 'DESC'
       },
-    });
+      limit: 1
+    };
+    const results = await this.jsonStorageService.query('statuses', options);
+    return results.length > 0 ? results[0] : null;
   }
 
   /**
@@ -58,10 +60,19 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async deleteOldStatuses(beforeDate: Date): Promise<number> {
-    const result = await this.repository.delete({
-      timestamp: LessThan(beforeDate),
-    });
-    return result.affected || 0;
+    const options = {
+      where: {
+        timestamp: { LessThan: beforeDate }
+      }
+    };
+    const recordsToDelete = await this.jsonStorageService.query('statuses', options);
+    const count = recordsToDelete.length;
+    
+    if (count > 0) {
+      await this.jsonStorageService.deleteMany('statuses', options.where);
+    }
+    
+    return count;
   }
 
   /**
@@ -69,9 +80,7 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async countStatusRecords(clientId: string): Promise<number> {
-    return this.repository.count({
-      where: { clientId },
-    });
+    return await this.jsonStorageService.count('statuses', { clientId });
   }
 
   /**
@@ -79,7 +88,7 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async countAllStatusRecords(): Promise<number> {
-    return this.repository.count();
+    return await this.jsonStorageService.count('statuses');
   }
 
   /**
@@ -87,12 +96,14 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async findOldestStatusTimestamp(): Promise<Date | null> {
-    const result = await this.repository.findOne({
+    const options = {
       order: {
-        timestamp: 'ASC',
+        timestamp: 'ASC'
       },
-    });
-    return result ? result.timestamp : null;
+      limit: 1
+    };
+    const results = await this.jsonStorageService.query('statuses', options);
+    return results.length > 0 ? new Date(results[0].timestamp) : null;
   }
 
   /**
@@ -100,11 +111,13 @@ export class StatusRepository {
    */
   @DatabaseRetry()
   async findNewestStatusTimestamp(): Promise<Date | null> {
-    const result = await this.repository.findOne({
+    const options = {
       order: {
-        timestamp: 'DESC',
+        timestamp: 'DESC'
       },
-    });
-    return result ? result.timestamp : null;
+      limit: 1
+    };
+    const results = await this.jsonStorageService.query('statuses', options);
+    return results.length > 0 ? new Date(results[0].timestamp) : null;
   }
 }

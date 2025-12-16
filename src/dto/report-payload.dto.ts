@@ -1,3 +1,19 @@
+export interface DiskInfo {
+  device: string;
+  size: number;
+  type: string;
+  interfaceType?: string;
+}
+
+export interface DiskUsage {
+  device: string;
+  size: number;
+  used: number;
+  available: number;
+  usagePercent: number;
+  mountpoint?: string;
+}
+
 export interface StaticSystemInfo {
   cpuModel: string;
   cpuCores: number;
@@ -7,7 +23,7 @@ export interface StaticSystemInfo {
   totalMemory: number;
   totalSwap: number;
   totalDisk: number;
-  diskType: string;
+  disks: DiskInfo[];
   location: string;
 }
 
@@ -17,6 +33,7 @@ export interface DynamicSystemStatus {
   memoryUsage: number;
   swapUsage: number;
   diskUsage: number;
+  diskUsages: DiskUsage[];
   networkUpload: number;
   networkDownload: number;
   timestamp: number;

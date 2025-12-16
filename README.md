@@ -120,7 +120,7 @@ Create `status-server/config.json`:
 - **Runtime**: Node.js 18+
 - **Language**: TypeScript
 - **Server Framework**: NestJS
-- **Database**: SQLite (TypeORM)
+- **Storage**: JSON files (file-based storage)
 - **System Info**: systeminformation
 
 ### Frontend
@@ -209,7 +209,7 @@ npm test
 
 ### Server Features
 - ✅ RESTful API with NestJS
-- ✅ SQLite database with TypeORM
+- ✅ JSON file-based storage system
 - ✅ Data validation and error handling
 - ✅ Automatic data cleanup (configurable retention)
 - ✅ Client online/offline detection
@@ -242,7 +242,7 @@ npm test
 - **High CPU**: Increase reportInterval in config
 
 ### Server Issues
-- **Database errors**: Check file permissions and disk space
+- **Storage errors**: Check file permissions and disk space for JSON files
 - **Port in use**: Change port in config or stop conflicting service
 - **Memory issues**: Reduce dataRetentionDays or upgrade hardware
 

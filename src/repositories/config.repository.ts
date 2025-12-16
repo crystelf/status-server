@@ -1,14 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { ConfigEntity } from '../entities';
 import { DatabaseRetry } from '../utils';
+import { JsonStorageService } from '../services';
 
 @Injectable()
 export class ConfigRepository {
   constructor(
-    @InjectRepository(ConfigEntity)
-    private readonly repository: Repository<ConfigEntity>,
+    @Inject(forwardRef(() => JsonStorageService))
+    private readonly jsonStorageService: JsonStorageService,
   ) {}
 
   /**
@@ -16,9 +15,7 @@ export class ConfigRepository {
    */
   @DatabaseRetry()
   async getConfig(key: string): Promise<string | null> {
-    const config = await this.repository.findOne({
-      where: { key },
-    });
+    const config = await this.jsonStorageService.findOne('configs', key);
     return config?.value || null;
   }
 
@@ -27,25 +24,27 @@ export class ConfigRepository {
    */
   @DatabaseRetry()
   async setConfig(key: string, value: string): Promise<void> {
-    await this.repository.save({ key, value });
-  }
-
-  /**
-   * Get all config entries
-   */
-  @DatabaseRetry()
-  async getAllConfig(): Promise<ConfigEntity[]> {
-    return this.repository.find();
-  }
-
-  /**
-   * Initialize default config if not exists
-   */
-  @DatabaseRetry()
-  async initializeDefaults(): Promise<void> {
-    const dataRetentionDays = await this.getConfig('data_retention_days');
-    if (!dataRetentionDays) {
-      await this.setConfig('data_retention_days', '30');
+    const existingConfig = await this.jsonStorageService.findOne('configs', key);
+    if (existingConfig) {
+      await this.jsonStorageService.update('configs', key, { value });
+    } else {
+      await this.jsonStorageService.create('configs', { key, value });
     }
+  }
+
+  /**
+   * Delete a config value
+   */
+  @DatabaseRetry()
+  async deleteConfig(key: string): Promise<void> {
+    await this.jsonStorageService.delete('configs', key);
+  }
+
+  /**
+   * Get all config values
+   */
+  @DatabaseRetry()
+  async getAllConfigs(): Promise<ConfigEntity[]> {
+    return await this.jsonStorageService.findAll('configs');
   }
 }
