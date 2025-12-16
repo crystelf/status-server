@@ -96,8 +96,22 @@ export class ValidationService {
       errors.push('staticInfo.totalDisk must be a non-negative number');
     }
 
-    if (typeof staticInfo.diskType !== 'string') {
-      errors.push('staticInfo.diskType must be a string');
+    if (!Array.isArray(staticInfo.disks)) {
+      errors.push('staticInfo.disks must be an array');
+    } else {
+      // Validate each disk in the array
+      for (let i = 0; i < staticInfo.disks.length; i++) {
+        const disk = staticInfo.disks[i];
+        if (typeof disk.device !== 'string') {
+          errors.push(`staticInfo.disks[${i}].device must be a string`);
+        }
+        if (typeof disk.size !== 'number' || disk.size < 0) {
+          errors.push(`staticInfo.disks[${i}].size must be a non-negative number`);
+        }
+        if (typeof disk.type !== 'string') {
+          errors.push(`staticInfo.disks[${i}].type must be a string`);
+        }
+      }
     }
 
     if (typeof staticInfo.location !== 'string') {
@@ -143,6 +157,34 @@ export class ValidationService {
       dynamicStatus.diskUsage > 100
     ) {
       errors.push('dynamicStatus.diskUsage must be a number between 0 and 100');
+    }
+
+    if (!Array.isArray(dynamicStatus.diskUsages)) {
+      errors.push('dynamicStatus.diskUsages must be an array');
+    } else {
+      // Validate each disk usage in the array
+      for (let i = 0; i < dynamicStatus.diskUsages.length; i++) {
+        const diskUsage = dynamicStatus.diskUsages[i];
+        if (typeof diskUsage.device !== 'string') {
+          errors.push(`dynamicStatus.diskUsages[${i}].device must be a string`);
+        }
+        if (typeof diskUsage.size !== 'number' || diskUsage.size < 0) {
+          errors.push(`dynamicStatus.diskUsages[${i}].size must be a non-negative number`);
+        }
+        if (typeof diskUsage.used !== 'number' || diskUsage.used < 0) {
+          errors.push(`dynamicStatus.diskUsages[${i}].used must be a non-negative number`);
+        }
+        if (typeof diskUsage.available !== 'number' || diskUsage.available < 0) {
+          errors.push(`dynamicStatus.diskUsages[${i}].available must be a non-negative number`);
+        }
+        if (
+          typeof diskUsage.usagePercent !== 'number' ||
+          diskUsage.usagePercent < 0 ||
+          diskUsage.usagePercent > 100
+        ) {
+          errors.push(`dynamicStatus.diskUsages[${i}].usagePercent must be a number between 0 and 100`);
+        }
+      }
     }
 
     if (typeof dynamicStatus.networkUpload !== 'number' || dynamicStatus.networkUpload < 0) {

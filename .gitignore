@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /data/json-storage/configs.json
+/data/json-storage/clients.json
+/data/json-storage/diskInfos.json
+/data/json-storage/diskUsages.json
+/data/json-storage/statuses.json
