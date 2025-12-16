@@ -34,6 +34,7 @@
     "prettier": "^3.0.0",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
+    "typeorm": "^0.3.28",
     "typescript": "^5.1.3"
   }
 }
