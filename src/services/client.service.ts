@@ -100,7 +100,7 @@ export class ClientService {
             hostname: client.hostname,
             platform: client.platform,
             status,
-            lastUpdate: client.updatedAt.getTime(),
+            lastUpdate: (client.updatedAt instanceof Date ? client.updatedAt : new Date(client.updatedAt)).getTime(),
           };
         }),
       );
@@ -145,7 +145,7 @@ export class ClientService {
         hostname: client.hostname,
         platform: client.platform,
         status,
-        lastUpdate: client.updatedAt.getTime(),
+        lastUpdate: (client.updatedAt instanceof Date ? client.updatedAt : new Date(client.updatedAt)).getTime(),
         staticInfo: {
           cpuModel: client.cpuModel || '',
           cpuCores: client.cpuCores || 0,
@@ -179,7 +179,7 @@ export class ClientService {
           })),
           networkUpload: Number(latestStatus.networkUpload),
           networkDownload: Number(latestStatus.networkDownload),
-          timestamp: latestStatus.timestamp.getTime(),
+          timestamp: (latestStatus.timestamp instanceof Date ? latestStatus.timestamp : new Date(latestStatus.timestamp)).getTime(),
         },
       };
 
@@ -210,7 +210,9 @@ export class ClientService {
       // Group disk usage by timestamp
       const diskUsageByTimestamp = new Map<number, DiskUsage[]>();
       diskUsageHistory.forEach(disk => {
-        const timestamp = disk.timestamp.getTime();
+        // Ensure timestamp is a Date object
+        const diskTimestamp = disk.timestamp instanceof Date ? disk.timestamp : new Date(disk.timestamp);
+        const timestamp = diskTimestamp.getTime();
         if (!diskUsageByTimestamp.has(timestamp)) {
           diskUsageByTimestamp.set(timestamp, []);
         }
@@ -225,7 +227,9 @@ export class ClientService {
       });
 
       const history: DynamicSystemStatus[] = statusRecords.map((record) => {
-        const timestamp = record.timestamp.getTime();
+        // Ensure timestamp is a Date object
+        const recordTimestamp = record.timestamp instanceof Date ? record.timestamp : new Date(record.timestamp);
+        const timestamp = recordTimestamp.getTime();
         return {
           cpuUsage: Number(record.cpuUsage),
           cpuFrequency: Number(record.cpuFrequency),
@@ -263,11 +267,13 @@ export class ClientService {
    * Default timeout: 5 minutes (300000ms)
    */
   private determineClientStatus(
-    lastUpdate: Date,
+    lastUpdate: Date | string | number,
     timeoutMs: number = 300000,
   ): 'online' | 'offline' {
     const now = new Date().getTime();
-    const lastUpdateTime = lastUpdate.getTime();
+    // Ensure lastUpdate is a Date object
+    const lastUpdateDate = lastUpdate instanceof Date ? lastUpdate : new Date(lastUpdate);
+    const lastUpdateTime = lastUpdateDate.getTime();
     const timeDiff = now - lastUpdateTime;
 
     return timeDiff <= timeoutMs ? 'online' : 'offline';
