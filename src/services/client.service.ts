@@ -48,6 +48,7 @@ export class ClientService {
         totalSwap: payload.staticInfo.totalSwap,
         totalDisk: payload.staticInfo.totalDisk,
         location: payload.staticInfo.location,
+        timezone: payload.staticInfo.timezone,
         updatedAt: new Date(),
       };
 
@@ -205,6 +206,7 @@ export class ClientService {
             interfaceType: disk.interfaceType,
           })),
           location: client.location || '',
+          timezone: client.timezone || '',
         },
         currentStatus: {
           cpuUsage: Number(latestStatus.cpuUsage),

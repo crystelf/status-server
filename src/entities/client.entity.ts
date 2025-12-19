@@ -53,6 +53,9 @@ export class ClientEntity {
   @Column('varchar', { length: 255, nullable: true })
   location: string;
 
+  @Column('varchar', { length: 50, nullable: true })
+  timezone: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
