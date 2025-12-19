@@ -7,4 +7,6 @@ export interface ClientSummaryDto {
   platform: string;
   status: 'online' | 'offline';
   lastUpdate: number;
+  createdAt: number;
+  lastOnlineAt: number | null;
 }

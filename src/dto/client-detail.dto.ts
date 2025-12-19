@@ -9,6 +9,8 @@ export interface ClientDetailDto {
   platform: string;
   status: 'online' | 'offline';
   lastUpdate: number;
+  createdAt: number;
+  lastOnlineAt: number | null;
   staticInfo: StaticSystemInfo;
   currentStatus: DynamicSystemStatus;
 }

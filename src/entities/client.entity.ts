@@ -59,6 +59,9 @@ export class ClientEntity {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: 'datetime', nullable: true })
+  lastOnlineAt: Date | null;
+
   @OneToMany(() => StatusEntity, (status: StatusEntity) => status.client)
   statuses: StatusEntity[];
 

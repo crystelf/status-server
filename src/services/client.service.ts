@@ -100,6 +100,22 @@ export class ClientService {
           }
           
           const status = this.determineClientStatus(lastUpdate);
+          
+          // Update lastOnlineAt if client is online and lastOnlineAt is not set or client was previously offline
+          let lastOnlineAt = client.lastOnlineAt;
+          if (status === 'online') {
+            if (!lastOnlineAt) {
+              // First time online, set lastOnlineAt to now
+              lastOnlineAt = new Date();
+              await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
+            }
+          } else {
+            // Client is offline, clear lastOnlineAt
+            if (lastOnlineAt) {
+              await this.clientRepository.updateLastOnlineAt(client.id, null);
+              lastOnlineAt = null;
+            }
+          }
 
           return {
             clientId: client.id,
@@ -110,6 +126,8 @@ export class ClientService {
             platform: client.platform,
             status,
             lastUpdate: (lastUpdate instanceof Date ? lastUpdate : new Date(lastUpdate)).getTime(),
+            createdAt: new Date(client.createdAt).getTime(),
+            lastOnlineAt: lastOnlineAt ? (lastOnlineAt instanceof Date ? lastOnlineAt : new Date(lastOnlineAt)).getTime() : null,
           };
         }),
       );
@@ -146,6 +164,20 @@ export class ClientService {
 
       const status = this.determineClientStatus(client.updatedAt);
 
+      // Update lastOnlineAt if client is online and lastOnlineAt is not set
+      let lastOnlineAt = client.lastOnlineAt;
+      if (status === 'online') {
+        if (!lastOnlineAt) {
+          lastOnlineAt = new Date();
+          await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
+        }
+      } else {
+        if (lastOnlineAt) {
+          await this.clientRepository.updateLastOnlineAt(client.id, null);
+          lastOnlineAt = null;
+        }
+      }
+      
       const detail: ClientDetailDto = {
         clientId: client.id,
         clientName: client.name,
@@ -155,6 +187,8 @@ export class ClientService {
         platform: client.platform,
         status,
         lastUpdate: (client.updatedAt instanceof Date ? client.updatedAt : new Date(client.updatedAt)).getTime(),
+        createdAt: new Date(client.createdAt).getTime(),
+        lastOnlineAt: lastOnlineAt ? (lastOnlineAt instanceof Date ? lastOnlineAt : new Date(lastOnlineAt)).getTime() : null,
         staticInfo: {
           cpuModel: client.cpuModel || '',
           cpuCores: client.cpuCores || 0,

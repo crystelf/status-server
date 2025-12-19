@@ -66,4 +66,14 @@ export class ClientRepository {
       updatedAt: new Date(),
     });
   }
+
+  /**
+   * Update client's last online timestamp
+   */
+  @DatabaseRetry()
+  async updateLastOnlineAt(id: string, lastOnlineAt: Date | null): Promise<void> {
+    await this.jsonStorageService.update('clients', id, {
+      lastOnlineAt: lastOnlineAt,
+    });
+  }
 }
