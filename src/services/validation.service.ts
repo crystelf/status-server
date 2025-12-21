@@ -182,7 +182,9 @@ export class ValidationService {
           diskUsage.usagePercent < 0 ||
           diskUsage.usagePercent > 100
         ) {
-          errors.push(`dynamicStatus.diskUsages[${i}].usagePercent must be a number between 0 and 100`);
+          errors.push(
+            `dynamicStatus.diskUsages[${i}].usagePercent must be a number between 0 and 100`,
+          );
         }
       }
     }
@@ -206,7 +208,7 @@ export class ValidationService {
   validateHistoryQuery(clientId: string, startTime: any, endTime: any): void {
     const errors: string[] = [];
 
-    if (!clientId || typeof clientId !== 'string') {
+    if (!clientId) {
       errors.push('clientId is required and must be a string');
     }
 
