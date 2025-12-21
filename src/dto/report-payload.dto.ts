@@ -48,4 +48,5 @@ export interface ReportPayloadDto {
   platform: string;
   staticInfo: StaticSystemInfo;
   dynamicStatus: DynamicSystemStatus;
+  priority?: number;
 }

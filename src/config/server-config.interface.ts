@@ -25,6 +25,12 @@ export interface ServerConfig {
    * - string[]: Array of allowed origins
    */
   cors?: boolean | string[];
+  
+  /**
+   * Authentication token for client requests
+   * If provided, clients must include this token in their requests
+   */
+  authToken?: string;
 }
 
 /**
@@ -35,4 +41,5 @@ export const DEFAULT_SERVER_CONFIG: ServerConfig = {
   dataRetentionDays: 30,
   databasePath: 'data/system-monitor.db',
   cors: true, // Enable CORS for all origins by default (development friendly)
+  authToken: undefined, // No authentication required by default
 };

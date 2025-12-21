@@ -46,6 +46,7 @@ export class ConfigService implements OnModuleInit {
             fileConfig.dataRetentionDays ?? DEFAULT_SERVER_CONFIG.dataRetentionDays,
           databasePath: fileConfig.databasePath ?? DEFAULT_SERVER_CONFIG.databasePath,
           cors: fileConfig.cors ?? DEFAULT_SERVER_CONFIG.cors,
+          authToken: fileConfig.authToken ?? DEFAULT_SERVER_CONFIG.authToken,
         };
 
         console.log('Configuration loaded from config.json');
@@ -95,6 +96,13 @@ export class ConfigService implements OnModuleInit {
    */
   getDataRetentionDays(): number {
     return this.config.dataRetentionDays;
+  }
+
+  /**
+   * Get the authentication token
+   */
+  getAuthToken(): string | undefined {
+    return this.config.authToken;
   }
 
   /**

@@ -12,5 +12,8 @@
   "_databasePath_description": "Path to SQLite database file (will be created if it doesn't exist)",
   
   "cors": true,
-  "_cors_description": "CORS configuration: false to disable, true to allow all origins, or array of allowed origins like [\"http://localhost:7777\", \"https://yourdomain.com\"]"
+  "_cors_description": "CORS configuration: false to disable, true to allow all origins, or array of allowed origins like [\"http://localhost:7777\", \"https://yourdomain.com\"]",
+  
+  "authToken": "",
+  "_authToken_description": "Authentication token for client requests. If provided, clients must include this token in their requests."
 }

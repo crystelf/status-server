@@ -1,7 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Inject, Headers } from '@nestjs/common';
 import { ClientService } from '../services';
 import { ValidationService } from '../services';
 import { ReportPayloadDto } from '../dto';
+import { ConfigService } from '../config';
 
 /**
  * ReportController handles client report submissions
@@ -13,6 +14,7 @@ export class ReportController {
   constructor(
     private readonly clientService: ClientService,
     private readonly validationService: ValidationService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -20,8 +22,20 @@ export class ReportController {
    */
   @Post()
   @HttpCode(HttpStatus.OK)
-  async receiveReport(@Body() payload: any): Promise<{ success: boolean; message?: string }> {
+  async receiveReport(
+    @Body() payload: any,
+    @Headers('x-auth-token') authToken: string
+  ): Promise<{ success: boolean; message?: string }> {
     try {
+      // Validate authentication token if configured
+      const configuredToken = this.configService.getAuthToken();
+      if (configuredToken) {
+        if (!authToken || authToken !== configuredToken) {
+          this.logger.warn('Invalid authentication token from client');
+          return { success: false, message: 'Invalid authentication token' };
+        }
+      }
+      
       const validatedPayload: ReportPayloadDto =
         this.validationService.validateReportPayload(payload);
       await this.clientService.saveReport(validatedPayload);

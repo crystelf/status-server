@@ -9,4 +9,5 @@ export interface ClientSummaryDto {
   lastUpdate: number;
   createdAt: number;
   lastOnlineAt: number | null;
+  priority: number;
 }

@@ -48,6 +48,7 @@ export class ClientService {
         totalSwap: payload.staticInfo.totalSwap,
         totalDisk: payload.staticInfo.totalDisk,
         location: payload.staticInfo.location,
+        priority: payload.priority || 0,
         updatedAt: new Date(),
       };
 
@@ -128,6 +129,7 @@ export class ClientService {
             lastUpdate: (lastUpdate instanceof Date ? lastUpdate : new Date(lastUpdate)).getTime(),
             createdAt: new Date(client.createdAt).getTime(),
             lastOnlineAt: lastOnlineAt ? (lastOnlineAt instanceof Date ? lastOnlineAt : new Date(lastOnlineAt)).getTime() : null,
+            priority: client.priority || 0,
           };
         }),
       );
@@ -189,6 +191,7 @@ export class ClientService {
         lastUpdate: (client.updatedAt instanceof Date ? client.updatedAt : new Date(client.updatedAt)).getTime(),
         createdAt: new Date(client.createdAt).getTime(),
         lastOnlineAt: lastOnlineAt ? (lastOnlineAt instanceof Date ? lastOnlineAt : new Date(lastOnlineAt)).getTime() : null,
+        priority: client.priority || 0,
         staticInfo: {
           cpuModel: client.cpuModel || '',
           cpuCores: client.cpuCores || 0,

@@ -11,6 +11,7 @@ export interface ClientDetailDto {
   lastUpdate: number;
   createdAt: number;
   lastOnlineAt: number | null;
+  priority: number;
   staticInfo: StaticSystemInfo;
   currentStatus: DynamicSystemStatus;
 }

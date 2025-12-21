@@ -53,6 +53,9 @@ export class ClientEntity {
   @Column('varchar', { length: 255, nullable: true })
   location: string;
 
+  @Column('integer', { default: 0 })
+  priority: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
