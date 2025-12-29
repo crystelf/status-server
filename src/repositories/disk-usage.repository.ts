@@ -1,12 +1,13 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Repository, Between, LessThan } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { DiskUsageEntity } from '../entities';
-import { JsonStorageService } from '../services';
 
 @Injectable()
 export class DiskUsageRepository {
   constructor(
-    @Inject(forwardRef(() => JsonStorageService))
-    private readonly jsonStorageService: JsonStorageService,
+    @InjectRepository(DiskUsageEntity)
+    private readonly diskUsageRepository: Repository<DiskUsageEntity>,
   ) {}
 
   /**
@@ -14,18 +15,18 @@ export class DiskUsageRepository {
    */
   async saveDiskUsages(clientId: string, diskUsages: any[]): Promise<void> {
     try {
-      for (const disk of diskUsages) {
-        await this.jsonStorageService.create('diskUsages', {
-          clientId,
-          device: disk.device,
-          size: disk.size,
-          used: disk.used,
-          available: disk.available,
-          usagePercent: disk.usagePercent,
-          mountpoint: disk.mountpoint,
-          timestamp: new Date(),
-        });
-      }
+      const diskUsageEntities = diskUsages.map(disk => ({
+        clientId,
+        device: disk.device,
+        size: disk.size,
+        used: disk.used,
+        available: disk.available,
+        usagePercent: disk.usagePercent,
+        mountpoint: disk.mountpoint,
+        timestamp: new Date(),
+      }));
+      
+      await this.diskUsageRepository.save(diskUsageEntities);
     } catch (error) {
       console.error(`Failed to save disk usage for client ${clientId}:`, error);
       throw error;
@@ -37,20 +38,20 @@ export class DiskUsageRepository {
    */
   async getLatestDiskUsage(clientId: string): Promise<DiskUsageEntity[]> {
     try {
-      // Get all disk usage records for the client
-      const allRecords = await this.jsonStorageService.findMany('diskUsages', { clientId });
-      
-      // Group by device and get the latest record for each device
-      const latestByDevice = new Map<string, DiskUsageEntity>();
-      
-      allRecords.forEach(record => {
-        const existing = latestByDevice.get(record.device);
-        if (!existing || new Date(record.timestamp) > new Date(existing.timestamp)) {
-          latestByDevice.set(record.device, record);
-        }
-      });
-      
-      return Array.from(latestByDevice.values());
+      // Use a query builder to get the latest record per device
+      const subQuery = this.diskUsageRepository.createQueryBuilder('du')
+        .select('du.device, MAX(du.timestamp) as maxTimestamp')
+        .where('du.clientId = :clientId', { clientId })
+        .groupBy('du.device');
+
+      return this.diskUsageRepository.createQueryBuilder('du')
+        .innerJoin(
+          `(${subQuery.getQuery()})`,
+          'latest',
+          'du.device = latest.device AND du.timestamp = latest.maxTimestamp'
+        )
+        .setParameter('clientId', clientId)
+        .getMany();
     } catch (error) {
       console.error(`Failed to get latest disk usage for client ${clientId}:`, error);
       throw error;
@@ -66,16 +67,15 @@ export class DiskUsageRepository {
     endTime: Date,
   ): Promise<DiskUsageEntity[]> {
     try {
-      const options = {
+      return this.diskUsageRepository.find({
         where: {
           clientId,
-          timestamp: { Between: [startTime, endTime] }
+          timestamp: Between(startTime, endTime),
         },
         order: {
-          timestamp: 'ASC'
-        }
-      };
-      return await this.jsonStorageService.query('diskUsages', options);
+          timestamp: 'ASC',
+        },
+      });
     } catch (error) {
       console.error(`Failed to get disk usage history for client ${clientId}:`, error);
       throw error;
@@ -87,19 +87,10 @@ export class DiskUsageRepository {
    */
   async deleteOldDiskUsages(beforeDate: Date): Promise<number> {
     try {
-      const options = {
-        where: {
-          timestamp: { LessThan: beforeDate }
-        }
-      };
-      const recordsToDelete = await this.jsonStorageService.query('diskUsages', options);
-      const count = recordsToDelete.length;
-      
-      if (count > 0) {
-        await this.jsonStorageService.deleteMany('diskUsages', options.where);
-      }
-      
-      return count;
+      const result = await this.diskUsageRepository.delete({
+        timestamp: LessThan(beforeDate),
+      });
+      return result.affected || 0;
     } catch (error) {
       console.error('Failed to delete old disk usage records:', error);
       throw error;

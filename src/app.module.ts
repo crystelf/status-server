@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientRepository } from './repositories';
 import { StatusRepository } from './repositories';
 import { ConfigRepository } from './repositories';
@@ -10,17 +11,27 @@ import { CleanupService } from './services';
 import { ConfigService } from './config';
 import { ReportController } from './controllers';
 import { ClientController } from './controllers';
-import { JsonStorageService } from './services';
-import { StorageConfigService } from './services';
+import { ClientEntity } from './entities';
+import { StatusEntity } from './entities';
+import { ConfigEntity } from './entities';
+import { DiskInfoEntity } from './entities';
+import { DiskUsageEntity } from './entities';
 
 @Module({
   imports: [
-    // TypeORM disabled - using JSON storage only
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      database: './data/status.db',
+      entities: [ClientEntity, StatusEntity, ConfigEntity, DiskInfoEntity, DiskUsageEntity],
+      synchronize: true,
+      logging: false,
+      migrationsRun: false,
+      migrationsTableName: 'migrations',
+    }),
+    TypeOrmModule.forFeature([ClientEntity, StatusEntity, ConfigEntity, DiskInfoEntity, DiskUsageEntity]),
   ],
   controllers: [ReportController, ClientController],
   providers: [
-    JsonStorageService,
-    StorageConfigService,
     ClientRepository,
     StatusRepository,
     ConfigRepository,
@@ -32,8 +43,6 @@ import { StorageConfigService } from './services';
     ConfigService,
   ],
   exports: [
-    JsonStorageService,
-    StorageConfigService,
     ClientRepository,
     StatusRepository,
     ConfigRepository,

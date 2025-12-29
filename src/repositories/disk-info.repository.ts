@@ -1,12 +1,13 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { DiskInfoEntity } from '../entities';
-import { JsonStorageService } from '../services';
 
 @Injectable()
 export class DiskInfoRepository {
   constructor(
-    @Inject(forwardRef(() => JsonStorageService))
-    private readonly jsonStorageService: JsonStorageService,
+    @InjectRepository(DiskInfoEntity)
+    private readonly diskInfoRepository: Repository<DiskInfoEntity>,
   ) {}
 
   /**
@@ -16,11 +17,11 @@ export class DiskInfoRepository {
   async saveDiskInfos(clientId: string, diskInfos: any[]): Promise<void> {
     try {
       // Delete existing disk information
-      await this.jsonStorageService.deleteMany('diskInfos', { clientId });
+      await this.diskInfoRepository.delete({ clientId });
 
       // Save new disk information
       for (const disk of diskInfos) {
-        await this.jsonStorageService.create('diskInfos', {
+        await this.diskInfoRepository.save({
           clientId,
           device: disk.device,
           size: disk.size,
@@ -39,7 +40,7 @@ export class DiskInfoRepository {
    */
   async getDiskInfosByClientId(clientId: string): Promise<DiskInfoEntity[]> {
     try {
-      return await this.jsonStorageService.findMany('diskInfos', { clientId });
+      return this.diskInfoRepository.findBy({ clientId });
     } catch (error) {
       console.error(`Failed to get disk info for client ${clientId}:`, error);
       throw error;
@@ -51,7 +52,7 @@ export class DiskInfoRepository {
    */
   async deleteDiskInfosByClientId(clientId: string): Promise<void> {
     try {
-      await this.jsonStorageService.deleteMany('diskInfos', { clientId });
+      await this.diskInfoRepository.delete({ clientId });
     } catch (error) {
       console.error(`Failed to delete disk info for client ${clientId}:`, error);
       throw error;

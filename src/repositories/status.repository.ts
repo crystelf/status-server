@@ -1,123 +1,100 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Repository, Between, LessThan } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { StatusEntity } from '../entities';
-import { DatabaseRetry } from '../utils';
-import { JsonStorageService } from '../services';
 
 @Injectable()
 export class StatusRepository {
   constructor(
-    @Inject(forwardRef(() => JsonStorageService))
-    private readonly jsonStorageService: JsonStorageService,
+    @InjectRepository(StatusEntity)
+    private readonly statusRepository: Repository<StatusEntity>,
   ) {}
 
   /**
    * Save a new status record
    */
-  @DatabaseRetry()
   async saveStatus(status: Partial<StatusEntity>): Promise<StatusEntity> {
-    return await this.jsonStorageService.create('statuses', status);
+    return this.statusRepository.save(status);
   }
 
   /**
    * Find status history for a client within a time range
    */
-  @DatabaseRetry()
   async findStatusHistory(
     clientId: string,
     startTime: Date,
     endTime: Date,
   ): Promise<StatusEntity[]> {
-    const options = {
+    return this.statusRepository.find({
       where: {
         clientId,
-        timestamp: { Between: [startTime, endTime] }
+        timestamp: Between(startTime, endTime),
       },
       order: {
-        timestamp: 'ASC'
-      }
-    };
-    return await this.jsonStorageService.query('statuses', options);
+        timestamp: 'ASC',
+      },
+    });
   }
 
   /**
    * Find the latest status for a client
    */
-  @DatabaseRetry()
   async findLatestStatus(clientId: string): Promise<StatusEntity | null> {
-    const options = {
+    return this.statusRepository.findOne({
       where: { clientId },
       order: {
-        timestamp: 'DESC'
+        timestamp: 'DESC',
       },
-      limit: 1
-    };
-    const results = await this.jsonStorageService.query('statuses', options);
-    return results.length > 0 ? results[0] : null;
+    });
   }
 
   /**
    * Delete old status records before a certain date
    */
-  @DatabaseRetry()
   async deleteOldStatuses(beforeDate: Date): Promise<number> {
-    const options = {
-      where: {
-        timestamp: { LessThan: beforeDate }
-      }
-    };
-    const recordsToDelete = await this.jsonStorageService.query('statuses', options);
-    const count = recordsToDelete.length;
-    
-    if (count > 0) {
-      await this.jsonStorageService.deleteMany('statuses', options.where);
-    }
-    
-    return count;
+    const result = await this.statusRepository.delete({
+      timestamp: LessThan(beforeDate),
+    });
+    return result.affected || 0;
   }
 
   /**
    * Count status records for a client
    */
-  @DatabaseRetry()
   async countStatusRecords(clientId: string): Promise<number> {
-    return await this.jsonStorageService.count('statuses', { clientId });
+    return this.statusRepository.countBy({ clientId });
   }
 
   /**
    * Count all status records across all clients
    */
-  @DatabaseRetry()
   async countAllStatusRecords(): Promise<number> {
-    return await this.jsonStorageService.count('statuses');
+    return this.statusRepository.count();
   }
 
   /**
    * Find the oldest status timestamp across all clients
    */
-  @DatabaseRetry()
   async findOldestStatusTimestamp(): Promise<Date | null> {
-    const options = {
+    const oldestStatus = await this.statusRepository.findOne({
       order: {
-        timestamp: 'ASC'
+        timestamp: 'ASC',
       },
-      limit: 1
-    };
-    const results = await this.jsonStorageService.query('statuses', options);
-    return results.length > 0 ? new Date(results[0].timestamp) : null;
+      select: ['timestamp'],
+    });
+    return oldestStatus?.timestamp || null;
   }
 
   /**
    * Find the newest status timestamp across all clients
    */
-  @DatabaseRetry()
   async findNewestStatusTimestamp(): Promise<Date | null> {
-    const options = {
+    const newestStatus = await this.statusRepository.findOne({
       order: {
-        timestamp: 'DESC'
+        timestamp: 'DESC',
       },
-      limit: 1
-    };
-    const results = await this.jsonStorageService.query('statuses', options);
-    return results.length > 0 ? new Date(results[0].timestamp) : null;
+      select: ['timestamp'],
+    });
+    return newestStatus?.timestamp || null;
   }
 }
