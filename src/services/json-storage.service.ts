@@ -1,25 +1,52 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 
 @Injectable()
 export class JsonStorageService {
   private readonly dataDir = 'data';
   private readonly jsonDir = path.join(this.dataDir, 'json-storage');
+  private readonly cache: Map<string, any[]> = new Map();
+  private readonly cacheExpiry: Map<string, number> = new Map();
+  private readonly CACHE_TTL = 5000; // 5 seconds cache TTL
+  
+  // Write batching configuration
+  private readonly writeQueue: Map<string, any[]> = new Map();
+  private readonly writeTimer: NodeJS.Timeout;
+  private readonly BATCH_WRITE_INTERVAL = 1000; // 1 second write interval
 
   constructor() {
-    this.ensureDirectoryExists();
+    this.ensureDirectoryExistsSync();
+    // Start the write batching timer
+    this.writeTimer = setInterval(() => this.flushWriteQueue(), this.BATCH_WRITE_INTERVAL);
   }
 
   /**
-   * Ensure JSON storage directory exists
+   * Ensure JSON storage directory exists (synchronous initialization)
    */
-  private ensureDirectoryExists(): void {
-    if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
+  private ensureDirectoryExistsSync(): void {
+    if (!fsSync.existsSync(this.dataDir)) {
+      fsSync.mkdirSync(this.dataDir, { recursive: true });
     }
-    if (!fs.existsSync(this.jsonDir)) {
-      fs.mkdirSync(this.jsonDir, { recursive: true });
+    if (!fsSync.existsSync(this.jsonDir)) {
+      fsSync.mkdirSync(this.jsonDir, { recursive: true });
+    }
+  }
+
+  /**
+   * Ensure JSON storage directory exists (asynchronous)
+   */
+  private async ensureDirectoryExists(): Promise<void> {
+    try {
+      await fs.access(this.dataDir);
+    } catch {
+      await fs.mkdir(this.dataDir, { recursive: true });
+    }
+    try {
+      await fs.access(this.jsonDir);
+    } catch {
+      await fs.mkdir(this.jsonDir, { recursive: true });
     }
   }
 
@@ -31,16 +58,33 @@ export class JsonStorageService {
   }
 
   /**
-   * Read JSON file content
+   * Check if cache is valid for a collection
    */
-  private readJsonFile(collection: string): any[] {
+  private isCacheValid(collection: string): boolean {
+    const expiry = this.cacheExpiry.get(collection);
+    return this.cache.has(collection) && expiry !== undefined && Date.now() < expiry;
+  }
+
+  /**
+   * Read JSON file content asynchronously
+   */
+  private async readJsonFile(collection: string): Promise<any[]> {
+    // Check cache first
+    if (this.isCacheValid(collection)) {
+      return this.cache.get(collection)!;
+    }
+
     const filePath = this.getFilePath(collection);
     try {
-      if (!fs.existsSync(filePath)) {
-        return [];
-      }
-      const content = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(content);
+      await fs.access(filePath);
+      const content = await fs.readFile(filePath, 'utf8');
+      const data = JSON.parse(content);
+      
+      // Update cache
+      this.cache.set(collection, data);
+      this.cacheExpiry.set(collection, Date.now() + this.CACHE_TTL);
+      
+      return data;
     } catch (error) {
       console.error(`Failed to read JSON file ${collection}:`, error);
       return [];
@@ -48,16 +92,60 @@ export class JsonStorageService {
   }
 
   /**
-   * Write JSON file content
+   * Queue data for writing (batching)
    */
-  private writeJsonFile(collection: string, data: any[]): void {
+  private queueWrite(collection: string, data: any[]): void {
+    this.writeQueue.set(collection, data);
+  }
+
+  /**
+   * Flush the write queue to disk
+   */
+  private async flushWriteQueue(): Promise<void> {
+    if (this.writeQueue.size === 0) {
+      return;
+    }
+
+    const collectionsToWrite = Array.from(this.writeQueue.entries());
+    this.writeQueue.clear();
+
+    try {
+      await Promise.all(collectionsToWrite.map(async ([collection, data]) => {
+        await this.writeJsonFileDirect(collection, data);
+      }));
+    } catch (error) {
+      console.error('Failed to flush write queue:', error);
+      // Requeue failed writes
+      collectionsToWrite.forEach(([collection, data]) => {
+        this.writeQueue.set(collection, data);
+      });
+    }
+  }
+
+  /**
+   * Write JSON file content directly to disk
+   */
+  private async writeJsonFileDirect(collection: string, data: any[]): Promise<void> {
+    await this.ensureDirectoryExists();
     const filePath = this.getFilePath(collection);
     try {
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+      await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
       console.error(`Failed to write JSON file ${collection}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Write JSON file content (using batching)
+   */
+  private async writeJsonFile(collection: string, data: any[]): Promise<void> {
+    // Update cache immediately for consistency
+    this.cache.set(collection, data);
+    this.cacheExpiry.set(collection, Date.now() + this.CACHE_TTL);
+    
+    // Queue for batch writing
+    this.queueWrite(collection, data);
   }
 
   /**
@@ -71,7 +159,7 @@ export class JsonStorageService {
    * Find records by conditions
    */
   async findMany(collection: string, conditions: any): Promise<any[]> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     return this.filterData(data, conditions);
   }
 
@@ -79,7 +167,7 @@ export class JsonStorageService {
    * Find a record by ID
    */
   async findOne(collection: string, id: string): Promise<any> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     return data.find(item => item.id === id);
   }
 
@@ -87,7 +175,7 @@ export class JsonStorageService {
    * Create a record
    */
   async create(collection: string, item: any): Promise<any> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     const newItem = {
       ...item,
       id: item.id || this.generateId(),
@@ -95,7 +183,7 @@ export class JsonStorageService {
       updatedAt: new Date()
     };
     data.push(newItem);
-    this.writeJsonFile(collection, data);
+    await this.writeJsonFile(collection, data);
     return newItem;
   }
 
@@ -103,7 +191,7 @@ export class JsonStorageService {
    * Update a record
    */
   async update(collection: string, id: string, updates: any): Promise<any> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     const index = data.findIndex(item => item.id === id);
     if (index === -1) {
       return null;
@@ -115,7 +203,7 @@ export class JsonStorageService {
       updatedAt: new Date()
     };
     
-    this.writeJsonFile(collection, data);
+    await this.writeJsonFile(collection, data);
     return data[index];
   }
 
@@ -123,14 +211,14 @@ export class JsonStorageService {
    * Delete a record
    */
   async delete(collection: string, id: string): Promise<boolean> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     const index = data.findIndex(item => item.id === id);
     if (index === -1) {
       return false;
     }
     
     data.splice(index, 1);
-    this.writeJsonFile(collection, data);
+    await this.writeJsonFile(collection, data);
     return true;
   }
 
@@ -138,9 +226,9 @@ export class JsonStorageService {
    * Delete records by conditions
    */
   async deleteMany(collection: string, conditions: any): Promise<boolean> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     const filteredData = this.filterData(data, conditions, true);
-    this.writeJsonFile(collection, filteredData);
+    await this.writeJsonFile(collection, filteredData);
     return true;
   }
 
@@ -148,7 +236,7 @@ export class JsonStorageService {
    * Count records
    */
   async count(collection: string, conditions?: any): Promise<number> {
-    const data = this.readJsonFile(collection);
+    const data = await this.readJsonFile(collection);
     if (!conditions) {
       return data.length;
     }

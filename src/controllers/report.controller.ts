@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Inject, Headers } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Headers } from '@nestjs/common';
 import { ClientService } from '../services';
 import { ValidationService } from '../services';
 import { ReportPayloadDto } from '../dto';
