@@ -102,7 +102,9 @@ export class ClientService {
           
           const status = this.determineClientStatus(lastUpdate);
           
-          // Update lastOnlineAt if client is online and lastOnlineAt is not set or client was previously offline
+          // Update lastOnlineAt to track online/offline transitions
+          // For online clients: set lastOnlineAt if not set
+          // For offline clients: keep lastOnlineAt to calculate offline duration
           let lastOnlineAt = client.lastOnlineAt;
           if (status === 'online') {
             if (!lastOnlineAt) {
@@ -111,11 +113,8 @@ export class ClientService {
               await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
             }
           } else {
-            // Client is offline, clear lastOnlineAt
-            if (lastOnlineAt) {
-              await this.clientRepository.updateLastOnlineAt(client.id, null);
-              lastOnlineAt = null;
-            }
+            // Client is offline, keep lastOnlineAt to track when it went offline
+            // Don't clear it so we can calculate offline duration
           }
 
           return {
@@ -166,7 +165,9 @@ export class ClientService {
 
       const status = this.determineClientStatus(client.updatedAt);
 
-      // Update lastOnlineAt if client is online and lastOnlineAt is not set
+      // Update lastOnlineAt to track online/offline transitions
+      // For online clients: set lastOnlineAt if not set
+      // For offline clients: keep lastOnlineAt to calculate offline duration
       let lastOnlineAt = client.lastOnlineAt;
       if (status === 'online') {
         if (!lastOnlineAt) {
@@ -174,10 +175,8 @@ export class ClientService {
           await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
         }
       } else {
-        if (lastOnlineAt) {
-          await this.clientRepository.updateLastOnlineAt(client.id, null);
-          lastOnlineAt = null;
-        }
+        // Client is offline, keep lastOnlineAt to track when it went offline
+        // Don't clear it so we can calculate offline duration
       }
       
       const detail: ClientDetailDto = {
