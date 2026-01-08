@@ -102,19 +102,17 @@ export class ClientService {
           
           const status = this.determineClientStatus(lastUpdate);
           
-          // Update lastOnlineAt to track online/offline transitions
-          // For online clients: set lastOnlineAt if not set
-          // For offline clients: keep lastOnlineAt to calculate offline duration
+          // Determine previous status based on lastOnlineAt
+          // If lastOnlineAt is null, client was previously offline
+          // If lastOnlineAt is set, client was previously online
+          const previousStatus = client.lastOnlineAt ? 'online' : 'offline';
+          
+          // Update lastOnlineAt on status transitions
           let lastOnlineAt = client.lastOnlineAt;
-          if (status === 'online') {
-            if (!lastOnlineAt) {
-              // First time online, set lastOnlineAt to now
-              lastOnlineAt = new Date();
-              await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
-            }
-          } else {
-            // Client is offline, keep lastOnlineAt to track when it went offline
-            // Don't clear it so we can calculate offline duration
+          if (status !== previousStatus) {
+            // Status changed, update lastOnlineAt to current time
+            lastOnlineAt = new Date();
+            await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
           }
 
           return {
@@ -165,18 +163,17 @@ export class ClientService {
 
       const status = this.determineClientStatus(client.updatedAt);
 
-      // Update lastOnlineAt to track online/offline transitions
-      // For online clients: set lastOnlineAt if not set
-      // For offline clients: keep lastOnlineAt to calculate offline duration
+      // Determine previous status based on lastOnlineAt
+      // If lastOnlineAt is null, client was previously offline
+      // If lastOnlineAt is set, client was previously online
+      const previousStatus = client.lastOnlineAt ? 'online' : 'offline';
+      
+      // Update lastOnlineAt on status transitions
       let lastOnlineAt = client.lastOnlineAt;
-      if (status === 'online') {
-        if (!lastOnlineAt) {
-          lastOnlineAt = new Date();
-          await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
-        }
-      } else {
-        // Client is offline, keep lastOnlineAt to track when it went offline
-        // Don't clear it so we can calculate offline duration
+      if (status !== previousStatus) {
+        // Status changed, update lastOnlineAt to current time
+        lastOnlineAt = new Date();
+        await this.clientRepository.updateLastOnlineAt(client.id, lastOnlineAt);
       }
       
       const detail: ClientDetailDto = {
